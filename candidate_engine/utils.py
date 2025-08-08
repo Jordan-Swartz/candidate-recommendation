@@ -7,11 +7,15 @@
 """
 import fitz
 import numpy as np
+import torch
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
+from transformers import pipeline
 
-# Import Embedding Model
-model = SentenceTransformer('all-MiniLM-L6-v2')
+# Import Embedding Model and text model
+model = SentenceTransformer('all-MiniLM-L6-v2', device="cpu")
+MODEL_ID = "google/flan-t5-small"
+summarizer = pipeline("text2text-generation", model=MODEL_ID, device=-1)
 
 def parse_resumes(uploaded_files):
     """
@@ -48,8 +52,24 @@ def calculate_similarity(job_description_embedding, applicant_embedding):
     app_emb = np.array(applicant_embedding).reshape(1, -1)
     return cosine_similarity(job_emb, app_emb)[0][0]
 
-def generate_applicant_summary(job_description, applicant):
-    """
-    Generates a summary of the applicant's fit for the given job description
-    """
-    return applicant.summary
+sum_resume = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=-1)
+sum_jd     = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=-1)
+
+fit = pipeline("text2text-generation", model="google/flan-t5-small", device=-1)
+
+def compress(text: str, max_chars=4000):
+    text = (text or "")[:max_chars]
+    return sum_resume(text, max_length=120, min_length=60, do_sample=False)[0]["summary_text"]
+
+def generate_applicant_summary(job_description: str, resume_text: str) -> str:
+    jd_sum  = compress(job_description)
+    res_sum = compress(resume_text)
+
+    prompt = (
+        "In exactly two sentences, assess the candidate's fit using overlap between the job and resume. "
+        "Mention concrete skills/tools. End with 'Fit: strong', 'Fit: medium', or 'Fit: weak'.\n\n"
+        f"Job (summary): {jd_sum}\n"
+        f"Resume (summary): {res_sum}\n\n"
+        "Summary:"
+    )
+    return fit(prompt, max_new_tokens=60, do_sample=False, num_beams=4, truncation=True)[0]["generated_text"].strip()

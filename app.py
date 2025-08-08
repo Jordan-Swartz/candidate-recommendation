@@ -136,37 +136,40 @@ with st.container(horizontal=False, horizontal_alignment="center"):
         if not job_description or no_resumes:
             st.warning("Please provide a job description and at least one resume.")
         else:
-            if text_toggle_state is False:
-                #process PDF list into raw text
-                raw_resume_data = parse_resumes(uploaded_resumes)
-            else:
-                raw_resume_data = [(f"manual_{i + 1}.txt", txt) for i, txt in
-                                   enumerate(st.session_state.manual_resumes)]
+            with st.spinner("Processing candidates..."):
+                if text_toggle_state is False:
+                    #process PDF list into raw text
+                    raw_resume_data = parse_resumes(uploaded_resumes)
+                else:
+                    raw_resume_data = [(f"manual_{i + 1}.txt", txt) for i, txt in
+                                       enumerate(st.session_state.manual_resumes)]
 
-            #create applicant objs from raw text
-            applicants = []
-            for filename, resume_text in raw_resume_data:
-                name = filename.rsplit('.', 1)[0]
-                applicant = Applicant(name, resume_text)
-                applicants.append(applicant)
+                #create applicant objs from raw text
+                applicants = []
+                for filename, resume_text in raw_resume_data:
+                    name = filename.rsplit('.', 1)[0]
+                    applicant = Applicant(name, resume_text)
+                    applicants.append(applicant)
 
-            #generate job description embedding
-            job_description_embedding = generate_embedding(job_description)
+                #generate job description embedding
+                job_description_embedding = generate_embedding(job_description)
 
-            #generate vector embedding and compute cosine similarity for each applicant
-            for applicant in applicants:
-                applicant.embedding = generate_embedding(applicant.resume_text)
-                applicant.similarity = calculate_similarity(job_description_embedding, applicant.embedding)
+                #generate vector embedding and compute cosine similarity for each applicant
+                for applicant in applicants:
+                    applicant.embedding = generate_embedding(applicant.resume_text)
+                    applicant.similarity = calculate_similarity(job_description_embedding, applicant.embedding)
 
-            #sort applicants by cosine similarity (descending: best to worst)
-            applicants.sort(key=lambda applicant: applicant.similarity, reverse=True)
+                #sort applicants by cosine similarity (descending: best to worst)
+                applicants.sort(key=lambda applicant: applicant.similarity, reverse=True)
 
-            #generate summaries for applicants
-            # for applicant in applicants:
-                #applicant.summary = generate_applicant_summary()
+                #generate summaries for applicants
+                for applicant in applicants:
+                    applicant.summary = generate_applicant_summary(job_description, applicant.resume_text)
 
-            st.session_state.applicants = applicants
-            st.session_state.results_ready = True
+                st.session_state.applicants = applicants
+                st.session_state.results_ready = True
+
+            st.success("Candidate recommendations generated!")
 
 # Display Engine Results
 if st.session_state.results_ready:
