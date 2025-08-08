@@ -1,8 +1,10 @@
 """
     This class contains the UI layout for the application
 """
+
 import streamlit as st
-from candidate_engine.resume_parser import parse_resumes
+import pandas as pd
+from datetime import datetime, date
 from candidate_engine.utils import *
 from candidate_engine.applicant import Applicant
 
@@ -44,7 +46,7 @@ st.subheader("How to use")
 #row 1
 col_icon, col_text = st.columns([1, 8])
 with col_icon:
-    st.image("resources/upload.png", width=48)
+    st.image("resources/img/upload.png", width=48)
 with col_text:
     st.markdown("Get started by entering your desired job description into the provided text field. Then, upload your candidate resumes either by pasting the text directly or by uploading files—whichever works best for you!")
 st.divider()
@@ -52,7 +54,7 @@ st.divider()
 #row 2
 col_icon, col_text = st.columns([1, 8])
 with col_icon:
-    st.image("resources/brain.png", width=48)
+    st.image("resources/img/brain.png", width=48)
 with col_text:
     st.markdown("Allow our engine to do the heavy lifting by analyzing the job description and resumes using advanced natural language processing. It will compute the cosine similarity between the job requirements and each resume to identify the most relevant candidates!")
 st.divider()
@@ -60,7 +62,7 @@ st.divider()
 #row 3
 col_icon, col_text = st.columns([1, 8])
 with col_icon:
-    st.image("resources/bulb.png", width=52)
+    st.image("resources/img/bulb.png", width=52)
 with col_text:
     st.markdown("After processing, enjoy a ranked list of candidates based on how well they match the job description! Our engine provides a detailed breakdown of each match, helping you understand exactly why a candidate received their ranking.")
 
@@ -90,8 +92,8 @@ with col2:
 
 #TODO:  raw_resume_data for text inputs list manually
 
-# Begin Computation
-cols = st.columns([2, 2, 2])
+# Engine Computation
+cols = st.columns([1, 4, 1])
 with cols[1]:
     start = st.button("Recommend Candidates", use_container_width=True)
 
@@ -109,5 +111,70 @@ with cols[1]:
         applicant = Applicant(name, resume_text)
         applicants.append(applicant)
 
-    #generate vector embeddings for each applicant
+    #generate job description embedding
+    job_description_embedding = generate_embedding(job_description)
 
+    #generate vector embedding and compute cosine similarity for each applicant
+    for applicant in applicants:
+        applicant.embedding = generate_embedding(applicant.resume_text)
+        applicant.similarity = calculate_similarity(job_description_embedding, applicant.embedding)
+    #sort applicants by cosine similarity (descending: best to worst)
+    applicants.sort(key=lambda applicant: applicant.similarity, reverse=True)
+
+    #generate summaries for top 10 applicants
+    # for applicant in applicants[:10]:
+        #applicant.summary = generate_applicant_summary()
+
+# Display Engine Results
+st.markdown("### Top Candidates")
+for idx, applicant in enumerate(applicants[:10], 1):
+    with st.container():
+        st.markdown(
+            "<div style='background-color:#f4f8fd; border-radius:12px; padding:1.2em 1em; margin-bottom:0.9em; border:1px solid #dbe7fa;'>",
+            unsafe_allow_html=True,
+        )
+
+        # -- YOUR COLUMNS/TABLE GOES HERE! --
+        col1, col2, col3, col4 = st.columns([2, 2, 2, 8])
+        col1.markdown("**Rank**")
+        col2.markdown("**Name**")
+        col3.markdown("**Similarity**")
+        col4.markdown("**Summary**")
+        col1.markdown(f"{idx}")
+        col2.markdown(f"{applicant.name}")
+        col3.markdown(f"{applicant.similarity:.2f}")
+        col4.markdown(f"{applicant.summary or 'No summary generated.'}")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# Download
+top_applicants = [
+    {
+        "Rank": idx+1,
+        "Name": applicant.name,
+        "Similarity": round(applicant.similarity, 3),
+        "Summary": applicant.summary or "No summary generated."
+    }
+    for idx, applicant in enumerate(applicants[:10])
+]
+df = pd.DataFrame(top_applicants)
+
+cols = st.columns([1, 1, 1])
+with cols[1]:
+    st.download_button(
+        label="Download Results as CSV",
+        data=df.to_csv(index=False),
+        file_name="top_candidates.csv",
+        mime="text/csv",
+)
+
+st.divider()
+
+# Feedback Footer
+cols = st.columns([1, 1, 1])
+with cols[1]:
+    st.markdown("*Give us a rating!*")
+    sentiment_mapping = ["one", "two", "three", "four", "five"]
+    selected = st.feedback("stars")
+    if selected is not None:
+        st.markdown(f"You selected {sentiment_mapping[selected]} star(s).")

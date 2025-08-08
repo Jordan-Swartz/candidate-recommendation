@@ -9,7 +9,7 @@
 """
 
 class Applicant:
-    def __init__(self, name, resume_text, source_file):
+    def __init__(self, name, resume_text):
         self.name = name
         self.resume_text = resume_text
         self.embedding = None
