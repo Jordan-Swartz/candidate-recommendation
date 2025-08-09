@@ -132,65 +132,67 @@ if "applicants" not in st.session_state:
 if "results_ready" not in st.session_state:
     st.session_state.results_ready = False
 
-with st.container(horizontal=False, horizontal_alignment="center"):
-    start = st.button("Recommend Candidates")
+with st.container():
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        start = st.button("Recommend Candidates")
 
-    if start:
-        # ✅ Import utils & Applicant on each click (cheap; models are lazy)
-        try:
-            import candidate_engine.utils as U
-            from candidate_engine.applicant import Applicant
-        except (ModuleNotFoundError, ImportError):
-            import utils as U
-            from applicant import Applicant
+        if start:
+            #import utils & Applicant on each click (cheap; models are lazy)
+            try:
+                import candidate_engine.utils as U
+                from candidate_engine.applicant import Applicant
+            except (ModuleNotFoundError, ImportError):
+                import utils as U
+                from applicant import Applicant
 
-        # same validation you had before
-        no_resumes = (
-                (text_toggle_state is False and not uploaded_resumes) or
-                (text_toggle_state is True and not st.session_state.manual_resumes)
-        )
+            # same validation you had before
+            no_resumes = (
+                    (text_toggle_state is False and not uploaded_resumes) or
+                    (text_toggle_state is True and not st.session_state.manual_resumes)
+            )
 
-        if not job_description or no_resumes:
-            st.warning("Please provide a job description and at least one resume.")
-        else:
-            with st.spinner("Processing candidates..."):
-                if text_toggle_state is False:
-                    raw_resume_data = U.parse_resumes(uploaded_resumes)
-                else:
-                    raw_resume_data = [
-                        (f"manual_{i + 1}.txt", txt)
-                        for i, txt in enumerate(st.session_state.manual_resumes)
-                    ]
-
-                #create applicant objs from raw text
-                applicants = []
-                for filename, resume_text in raw_resume_data:
-                    name = filename.rsplit('.', 1)[0]
-                    applicant = Applicant(name, resume_text)
-                    applicants.append(applicant)
-
-                #generate job description embedding
-                job_description_embedding = U.generate_embedding(job_description)
-
-                #generate vector embedding and compute cosine similarity for each applicant
-                for applicant in applicants:
-                    applicant.embedding = U.generate_embedding(applicant.resume_text)
-                    applicant.similarity = U.calculate_similarity(job_description_embedding, applicant.embedding)
-
-                #sort applicants by cosine similarity (descending: best to worst)
-                applicants.sort(key=lambda applicant: applicant.similarity, reverse=True)
-
-                #generate summaries for applicants
-                for applicant in applicants:
-                    if summary_toggle_state:
-                        applicant.summary = U.generate_applicant_summary(job_description, applicant.resume_text)
+            if not job_description or no_resumes:
+                st.warning("Please provide a job description and at least one resume.")
+            else:
+                with st.spinner("Processing candidates..."):
+                    if text_toggle_state is False:
+                        raw_resume_data = U.parse_resumes(uploaded_resumes)
                     else:
-                        applicant.summary = "No Summary Provided."
+                        raw_resume_data = [
+                            (f"manual_{i + 1}.txt", txt)
+                            for i, txt in enumerate(st.session_state.manual_resumes)
+                        ]
 
-                st.session_state.applicants = applicants
-                st.session_state.results_ready = True
+                    #create applicant objs from raw text
+                    applicants = []
+                    for filename, resume_text in raw_resume_data:
+                        name = filename.rsplit('.', 1)[0]
+                        applicant = Applicant(name, resume_text)
+                        applicants.append(applicant)
 
-            st.success("Candidate recommendations generated!")
+                    #generate job description embedding
+                    job_description_embedding = U.generate_embedding(job_description)
+
+                    #generate vector embedding and compute cosine similarity for each applicant
+                    for applicant in applicants:
+                        applicant.embedding = U.generate_embedding(applicant.resume_text)
+                        applicant.similarity = U.calculate_similarity(job_description_embedding, applicant.embedding)
+
+                    #sort applicants by cosine similarity (descending: best to worst)
+                    applicants.sort(key=lambda applicant: applicant.similarity, reverse=True)
+
+                    #generate summaries for applicants
+                    for applicant in applicants:
+                        if summary_toggle_state:
+                            applicant.summary = U.generate_applicant_summary(job_description, applicant.resume_text)
+                        else:
+                            applicant.summary = "No Summary Provided."
+
+                    st.session_state.applicants = applicants
+                    st.session_state.results_ready = True
+
+                st.success("Candidate recommendations generated!")
 
 # Display Engine Results
 if st.session_state.results_ready:
@@ -248,12 +250,14 @@ if st.session_state.results_ready:
     df = pd.DataFrame(top_applicants)
 
     with st.container():
-        st.download_button(
-            label="Download Results as CSV",
-            data=df.to_csv(index=False),
-            file_name="top_candidates.csv",
-            mime="text/csv",
-        )
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            st.download_button(
+                label="Download Results as CSV",
+                data=df.to_csv(index=False),
+                file_name="top_candidates.csv",
+                mime="text/csv",
+            )
 
 st.divider()
 
