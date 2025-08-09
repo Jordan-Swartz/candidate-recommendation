@@ -7,15 +7,26 @@
 """
 import fitz
 import numpy as np
-import torch
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import pipeline
+from functools import lru_cache
 
-# Import Embedding Model and text model
-model = SentenceTransformer('all-MiniLM-L6-v2', device="cpu")
-MODEL_ID = "google/flan-t5-small"
-summarizer = pipeline("text2text-generation", model=MODEL_ID, device=-1)
+@lru_cache(maxsize=1)
+def get_model():
+    return SentenceTransformer('all-MiniLM-L6-v2', device="cpu")
+
+@lru_cache(maxsize=1)
+def get_sum_resume():
+    return pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=-1)
+
+@lru_cache(maxsize=1)
+def get_sum_jd():
+    return pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=-1)
+
+@lru_cache(maxsize=1)
+def get_fit():
+    return pipeline("text2text-generation", model="google/flan-t5-small", device=-1)
 
 def parse_resumes(uploaded_files):
     """
@@ -41,7 +52,7 @@ def generate_embedding(text):
     """
     Generates a vector embedding from the given text
     """
-    return model.encode(text)
+    return get_model().encode(text)
 
 def calculate_similarity(job_description_embedding, applicant_embedding):
     """
@@ -52,14 +63,10 @@ def calculate_similarity(job_description_embedding, applicant_embedding):
     app_emb = np.array(applicant_embedding).reshape(1, -1)
     return cosine_similarity(job_emb, app_emb)[0][0]
 
-sum_resume = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=-1)
-sum_jd     = pipeline("summarization", model="sshleifer/distilbart-cnn-12-6", device=-1)
-
-fit = pipeline("text2text-generation", model="google/flan-t5-small", device=-1)
-
 def compress(text: str, max_chars=4000):
     text = (text or "")[:max_chars]
-    return sum_resume(text, max_length=120, min_length=60, do_sample=False)[0]["summary_text"]
+    return get_sum_resume()(text, max_length=120, min_length=60, do_sample=False)[0]["summary_text"]
+
 
 def generate_applicant_summary(job_description: str, resume_text: str) -> str:
     jd_sum  = compress(job_description)
@@ -72,4 +79,4 @@ def generate_applicant_summary(job_description: str, resume_text: str) -> str:
         f"Resume (summary): {res_sum}\n\n"
         "Summary:"
     )
-    return fit(prompt, max_new_tokens=60, do_sample=False, num_beams=4, truncation=True)[0]["generated_text"].strip()
+    return get_fit()(prompt, max_new_tokens=60, do_sample=False, num_beams=4, truncation=True)[0]["generated_text"].strip()
