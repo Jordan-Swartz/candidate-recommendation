@@ -40,7 +40,7 @@ A Python and Streamlit-based web application that recommends the most relevant j
    - `streamlit run app.py`
 
 ### 🎥 Project Demo
-- Screencast: [Project Demo](https://youtu.be/jJKHuc3hb-g)
+- Screencast: [Project Demo](https://youtu.be/GjuWghdO9I8)
 ---
 
 ## 4: 🛠 Technologies Used:
