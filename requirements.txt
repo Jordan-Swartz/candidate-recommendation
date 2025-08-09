@@ -1,9 +1,9 @@
 streamlit==1.48.0
-PyMuPDF==1.24.10
-numpy==1.26.4
+PyMuPDF==1.24.11
+numpy==2.0.2
 pandas==2.2.2
-scikit-learn==1.4.2
+scikit-learn==1.5.2
 sentence-transformers==2.7.0
-transformers==4.43.3
-torch==2.3.1
-sentencepiece==0.1.99
+transformers==4.46.3
+torch==2.5.1
+sentencepiece==0.2.0
