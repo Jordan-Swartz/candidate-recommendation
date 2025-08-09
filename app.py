@@ -1,20 +1,7 @@
-"""
-    This class contains the UI layout for the application
-"""
-
 import streamlit as st
 import pandas as pd
 from candidate_engine.utils import *
 from candidate_engine.applicant import Applicant
-
-@st.cache_resource
-def get_embedder():
-    return SentenceTransformer("all-MiniLM-L6-v2", device="cpu")
-
-@st.cache_resource
-def get_summarizer():
-    return pipeline("text2text-generation", model="google/flan-t5-small", device=-1)
-
 
 # Sidebar
 add_selectbox = st.sidebar.selectbox(
