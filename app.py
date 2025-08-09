@@ -1,7 +1,13 @@
 import streamlit as st
 import pandas as pd
-U = None
-Applicant = None
+
+# normal imports; utils.py still lazy-loads the models internally
+try:
+    import candidate_engine.utils as U
+    from candidate_engine.applicant import Applicant
+except (ModuleNotFoundError, ImportError):
+    import utils as U
+    from applicant import Applicant
 
 # Sidebar
 add_selectbox = st.sidebar.selectbox(
@@ -138,14 +144,6 @@ with st.container():
         start = st.button("Recommend Candidates")
 
         if start:
-            #import utils & Applicant on each click (cheap; models are lazy)
-            try:
-                import candidate_engine.utils as U
-                from candidate_engine.applicant import Applicant
-            except (ModuleNotFoundError, ImportError):
-                import utils as U
-                from applicant import Applicant
-
             # same validation you had before
             no_resumes = (
                     (text_toggle_state is False and not uploaded_resumes) or
