@@ -1,0 +1,9 @@
+streamlit==1.48.0
+PyMuPDF            # gives you `fitz`
+numpy
+pandas
+scikit-learn
+sentence-transformers
+transformers
+torch              # CPU wheel; fine on Streamlit Cloud
+sentencepiece      # needed by T5 tokenizer
