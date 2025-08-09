@@ -28,7 +28,7 @@ A Python and Streamlit-based web application that recommends the most relevant j
 
 ## 3: 🚀 Running the Project:
 ### 🔗 Public Link
-- Streamlit Link: [Project Link]()
+- Streamlit Link: [Project Link](https://jordan-swartz-candidate-recommendation-app-qmui0u.streamlit.app/)
 ### ⬆️ Project Setup
 1. Create Virtual Environment
    - `python3 -m venv venv`
