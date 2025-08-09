@@ -132,7 +132,7 @@ if "applicants" not in st.session_state:
 if "results_ready" not in st.session_state:
     st.session_state.results_ready = False
 
-with st.container(horizontal=False, horizontal_alignment="center"):
+with st.container():
     start = st.button("Recommend Candidates")
 
     if start:
@@ -238,7 +238,7 @@ if st.session_state.results_ready:
     ]
     df = pd.DataFrame(top_applicants)
 
-    with st.container(horizontal=False, horizontal_alignment="center"):
+    with st.container():
         st.download_button(
             label="Download Results as CSV",
             data=df.to_csv(index=False),
@@ -251,7 +251,7 @@ st.divider()
 
 # Feedback Footer
 st.subheader("Give Us a Rating!")
-with st.container(horizontal=False, horizontal_alignment="center"):
+with st.container():
     selected = st.feedback("stars")
     if selected is not None:
         st.markdown("*Thank You!*")
