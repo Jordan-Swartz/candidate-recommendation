@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-from candidate_engine.utils import *
-from candidate_engine.applicant import Applicant
+U = None
+Applicant = None
 
 # Sidebar
 add_selectbox = st.sidebar.selectbox(
@@ -132,11 +132,19 @@ if "applicants" not in st.session_state:
 if "results_ready" not in st.session_state:
     st.session_state.results_ready = False
 
-with st.container():
+with st.container(horizontal=False, horizontal_alignment="center"):
     start = st.button("Recommend Candidates")
 
     if start:
-        # validate by mode
+        # ✅ Import utils & Applicant on each click (cheap; models are lazy)
+        try:
+            import candidate_engine.utils as U
+            from candidate_engine.applicant import Applicant
+        except (ModuleNotFoundError, ImportError):
+            import utils as U
+            from applicant import Applicant
+
+        # same validation you had before
         no_resumes = (
                 (text_toggle_state is False and not uploaded_resumes) or
                 (text_toggle_state is True and not st.session_state.manual_resumes)
@@ -147,11 +155,12 @@ with st.container():
         else:
             with st.spinner("Processing candidates..."):
                 if text_toggle_state is False:
-                    #process PDF list into raw text
-                    raw_resume_data = parse_resumes(uploaded_resumes)
+                    raw_resume_data = U.parse_resumes(uploaded_resumes)
                 else:
-                    raw_resume_data = [(f"manual_{i + 1}.txt", txt) for i, txt in
-                                       enumerate(st.session_state.manual_resumes)]
+                    raw_resume_data = [
+                        (f"manual_{i + 1}.txt", txt)
+                        for i, txt in enumerate(st.session_state.manual_resumes)
+                    ]
 
                 #create applicant objs from raw text
                 applicants = []
@@ -161,12 +170,12 @@ with st.container():
                     applicants.append(applicant)
 
                 #generate job description embedding
-                job_description_embedding = generate_embedding(job_description)
+                job_description_embedding = U.generate_embedding(job_description)
 
                 #generate vector embedding and compute cosine similarity for each applicant
                 for applicant in applicants:
-                    applicant.embedding = generate_embedding(applicant.resume_text)
-                    applicant.similarity = calculate_similarity(job_description_embedding, applicant.embedding)
+                    applicant.embedding = U.generate_embedding(applicant.resume_text)
+                    applicant.similarity = U.calculate_similarity(job_description_embedding, applicant.embedding)
 
                 #sort applicants by cosine similarity (descending: best to worst)
                 applicants.sort(key=lambda applicant: applicant.similarity, reverse=True)
@@ -174,7 +183,7 @@ with st.container():
                 #generate summaries for applicants
                 for applicant in applicants:
                     if summary_toggle_state:
-                        applicant.summary = generate_applicant_summary(job_description, applicant.resume_text)
+                        applicant.summary = U.generate_applicant_summary(job_description, applicant.resume_text)
                     else:
                         applicant.summary = "No Summary Provided."
 

@@ -12,11 +12,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from transformers import pipeline
 from functools import lru_cache
 
-# Import Embedding Model and text model
-# model = SentenceTransformer('all-MiniLM-L6-v2', device="cpu")
-# MODEL_ID = "google/flan-t5-small"
-# summarizer = pipeline("text2text-generation", model=MODEL_ID, device=-1)
-
 @lru_cache(maxsize=1)
 def get_model():
     return SentenceTransformer('all-MiniLM-L6-v2', device="cpu")
