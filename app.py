@@ -58,7 +58,7 @@ col_icon, col_text = st.columns([1, 8])
 with col_icon:
     st.image("resources/img/bulb.png", width=52)
 with col_text:
-    st.markdown("After processing, enjoy a ranked list of candidates based on how well they match the job description! Our engine provides a detailed breakdown of each match, helping you understand exactly why a candidate received their ranking.")
+    st.markdown("After processing, enjoy a ranked list of candidates based on how well they match the job description! Our engine provides an optional detailed breakdown of each match, helping you understand exactly why a candidate received their ranking.")
 st.markdown(
             "<h4 style='text-align: center;'>Get Started Below!</h4>",
             unsafe_allow_html=True
@@ -98,12 +98,25 @@ with col2:
             for idx, res in enumerate(ss.manual_resumes, 1):
                 st.markdown(f"- **Resume {idx}** ({len(res)} chars)")
 
-        st.toggle("Text Input", key="text_toggle_state")
+        with st.container():
+            col1, col2 = st.columns([1, 1])
+
+            with col1:
+                text_toggle_state = st.toggle("Text Input", key="text_toggle_state", value=False)
+            with col2:
+                summary_toggle_state = st.toggle("AI Summary", key="summary_toggle_state", value=False)
 
     else:
         #pdf mode
         uploaded_resumes = st.file_uploader("Upload Resume PDFs", accept_multiple_files=True)
-        st.toggle("Text Input", key="text_toggle_state")
+        with st.container():
+            col1, col2 = st.columns([1, 1])
+
+            with col1:
+                text_toggle_state = st.toggle("Text Input", key="text_toggle_state", value=False)
+            with col2:
+                summary_toggle_state = st.toggle("AI Summary", key="summary_toggle_state", value=False)
+        # st.toggle("Text Input", key="text_toggle_state")
 
     #clear list when activating toggle
     if ss.prev_text_toggle_state and not ss.text_toggle_state:
@@ -164,7 +177,10 @@ with st.container(horizontal=False, horizontal_alignment="center"):
 
                 #generate summaries for applicants
                 for applicant in applicants:
-                    applicant.summary = generate_applicant_summary(job_description, applicant.resume_text)
+                    if summary_toggle_state:
+                        applicant.summary = generate_applicant_summary(job_description, applicant.resume_text)
+                    else:
+                        applicant.summary = "No Summary Provided."
 
                 st.session_state.applicants = applicants
                 st.session_state.results_ready = True
